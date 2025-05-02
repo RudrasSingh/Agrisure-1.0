@@ -26,7 +26,7 @@ class Claims(Base):
     claim_date = Column(TIMESTAMP, default="now()")  # When the claim was filed
     settlement_date = Column(TIMESTAMP, nullable=True)  # The date when the claim is settled (null if not settled yet)
     descr = Column(Text, nullable=True)  # Claim description - Contains the url for the AI doc processed for the claim 
-    confidence_score = Column(Numeric, nullable=False)  # contains the confidence score of the AI model fromm satellite
+    confidence_score = Column(Numeric, nullable=True)  # contains the confidence score of the AI model fromm satellite
     reason_ = Column(Text, nullable=True)  # Reason for claim (optional)
     created_at = Column(TIMESTAMP, default="now()")  # When the record is created
     updated_at = Column(TIMESTAMP, nullable=True)  # When the record is updated (nullable)
