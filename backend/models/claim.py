@@ -32,7 +32,7 @@ class Claims(Base):
     updated_at = Column(TIMESTAMP, nullable=True)  # When the record is updated (nullable)
     insurer_id = Column(String, ForeignKey("AgriSure.insurer.insurer_id"), nullable=False)
     # Relationships
-    policy = relationship("InsPolicies", back_populates="claims")  # Relating with ins_policies table
+    policy = relationship("InsPolicy", back_populates="claims")  # Relating with ins_policies table
     farmer = relationship("Farmer", back_populates="claims")  # Relating with farmer table
 
     def to_dict(self):

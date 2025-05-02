@@ -5,6 +5,7 @@ from datetime import datetime
 from utils.auth import token_required, farmer_required
 from sqlalchemy.orm import Session
 
+
 farmer_auth_bp = Blueprint("farmer_auth", __name__, url_prefix="/api/v1/farmer")
 
 def get_db():
@@ -18,6 +19,7 @@ def get_db():
 @farmer_auth_bp.route("/signup", methods=["POST"])
 def signup():
     data = request.json
+    print(data)
     email = data.get("email")
     password = data.get("password")
     
@@ -26,6 +28,9 @@ def signup():
     
     full_name = data.get("full_name")
     phone = data.get("phone")
+    upi_id = data.get("upi_id")
+    address = data.get("address")
+    language_pref = data.get("language_pref")
 
     if not all([email, password, aadhaar_number, full_name, phone]):
         return jsonify({"error": "Email, password, Aadhaar number, and full name are required"}), 400
@@ -50,7 +55,10 @@ def signup():
             aadhaar_number=aadhaar_number,
             full_name=full_name,
             created_at=datetime.now(),
-            phone=phone
+            phone=phone,
+            upi_id=upi_id,
+            address=address,
+            language_pref=language_pref,
         )
         db.add(new_farmer)
         db.commit()
@@ -171,3 +179,129 @@ def get_current_farmer():
 
         }
     }), 200
+
+@farmer_auth_bp.route("/update-profile", methods=["PUT"])
+@token_required
+@farmer_required
+def update_profile():
+    db = next(get_db())
+    email = request.user.get("email")
+
+    if not email:
+        return jsonify({"error": "Email not found in session"}), 400
+
+    farmer = db.query(Farmer).filter_by(email=email).first()
+    if not farmer:
+        return jsonify({"error": "Farmer not found"}), 404
+
+    data = request.json
+    phone = data.get("phone")
+    address = data.get("address")
+    upi_id = data.get("upi_id")
+    language_pref = data.get("language_pref")
+    full_name = data.get("full_name")
+
+    try:
+        if phone:
+            farmer.phone = phone
+        if address:
+            farmer.address = address
+        if upi_id:
+            farmer.upi_id = upi_id
+        if language_pref:
+            farmer.language_pref = language_pref
+        if full_name:
+            farmer.full_name = full_name
+
+        db.commit()
+
+        return jsonify({
+            "message": "Profile updated successfully",
+            "profile": {
+                "aadhaar_number": "XXXX-XXXX-" + farmer.aadhaar_number[-4:],
+                "phone" : farmer.phone,
+                "full_name": farmer.full_name,
+                "email": farmer.email,
+                "address": farmer.address,
+                "upi_id": farmer.upi_id,
+                "land_doc_url": farmer.land_doc_url,
+                "kyc_verified": farmer.kyc_verified,
+                "language_pref": farmer.language_pref,
+                "wallet_address": farmer.wallet_address,
+                "created_at": farmer.created_at.isoformat() if farmer.created_at else None,
+
+            }
+        }), 200
+
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": "Profile update failed", "detail": str(e)}), 500
+    
+
+# @farmer_auth_bp.route("/dashboard", methods=["GET"])
+# @token_required
+# @farmer_required
+# def get_dashboard_date():
+#     from models.insurancePolicy import InsPolicy  # Import the InsPolicy model
+#     from models.claim import Claims  # Import the Claims model
+#     db = next(get_db())
+#     email = request.user.get("email")
+
+#     if not email:
+#         return jsonify({"error": "Email not found in session"}), 400
+
+#     # Fetch farmer details
+#     farmer = db.query(Farmer).filter_by(email=email).first()
+#     if not farmer:
+#         return jsonify({"error": "Farmer not found"}), 404
+
+#     # Fetch active policies
+#     active_policies = db.query(InsPolicy).filter_by(aadhaar_number=farmer.aadhaar_number, status="active").all()
+#     active_policies_count = len(active_policies)
+#     total_premium_amount = sum(policy.premium_amount for policy in active_policies)
+#     total_amount_insured = sum(policy.coverage_amount for policy in active_policies)
+
+#     # Fetch recent transactions (example: premium payments)
+#     recent_transactions = db.query(Claims).filter_by(aadhaar_number=farmer.aadhaar_number).order_by(Claims.claim_date.desc()).limit(5).all()
+#     transactions_data = [
+#         {
+#             "transactionId": claim.claim_id,
+#             "type": "Claim Settlement",
+#             "amount": claim.claim_amt,
+#             "date": claim.claim_date.isoformat() if claim.claim_date else "N/A",
+#             "status": claim.claim_sts.value if claim.claim_sts else "N/A"
+#         }
+#         for claim in recent_transactions
+#     ]
+
+#     # Example weather alerts (replace with dynamic data if available)
+#     weather_alerts = [
+#         {
+#             "type": "Heavy Rainfall",
+#             "date": "2025-05-15",
+#             "location": "Northern Region",
+#             "impact": "Moderate"
+#         },
+#         {
+#             "type": "Heatwave",
+#             "date": "2025-05-18",
+#             "location": "All Regions",
+#             "impact": "High"
+#         }
+#     ]
+
+#     # Prepare dashboard data
+#     dashboard_data = {
+#         "farmer": {
+#             "name": farmer.full_name
+#         },
+#         "stats": {
+#             "activePolicies": active_policies_count,
+#             "totalPremiumAmount": total_premium_amount,
+#             "totalAmountInsured": total_amount_insured
+#         },
+#         "weatherAlerts": weather_alerts,
+#         "recentTransactions": transactions_data
+#     }
+
+#     return jsonify(dashboard_data), 200

@@ -3,6 +3,7 @@ from datetime import datetime
 import io
 from backend.database import get_db  # your SQLAlchemy session generator
 from models import Claim  # your SQLAlchemy model
+from models.lands import LandData  # your SQLAlchemy model for land data
 from utils.area_converter import convert_to_sq_meters
 from utils.sentinel import generate_bbox
 from utils.analytics import analyze_indices
@@ -18,17 +19,22 @@ def verify(claim_id):
     if not claim:
         return jsonify({"error": "Claim not found"}), 404
 
+    # Fetch land data using Aadhaar number from the claim
+    land_data = db.query(LandData).filter_by(aadhaar_number=claim.aadhaar_number).first()
+    if not land_data:
+        return jsonify({"error": "Land data not found for the given Aadhaar number"}), 404
+
     # 1. Prepare inputs
-    lat, lon = claim.latitude, claim.longitude
-    area_sqm = convert_to_sq_meters(claim.area_value, claim.area_unit)
+    lat, lon = land_data.coordinates["latitude"], land_data.coordinates["longitude"]
+    area_sqm = land_data.area_hec * 10000  # Convert acres to square meters
     bbox = generate_bbox(lat, lon, area_sqm)
     geometry = None  # or construct from bbox/polygon
-    # compute dimensions
+    # Compute dimensions
     from sentinelhub import bbox_to_dimensions
     size = bbox_to_dimensions(bbox, resolution=10)
 
     # 2. Analyze
-    end_date = datetime.utcnow().date()
+    end_date = datetime.now()
     analysis = analyze_indices(bbox, geometry, end_date, size)
 
     # 3. Narrative & PDF
@@ -36,7 +42,10 @@ def verify(claim_id):
     farmer_info = {
         "Latitude": lat,
         "Longitude": lon,
-        "Area": f"{claim.area_value} {claim.area_unit}"
+        "Area": f"{land_data.area_hec} acres",
+        "Crop Type": land_data.crop_type,
+        "Sowing Date": land_data.sowing_date.isoformat() if land_data.sowing_date else "N/A",
+        "Soil Type": land_data.soil_type
     }
     pdf_bytes = build_pdf_report(farmer_info, analysis, narrative)
 

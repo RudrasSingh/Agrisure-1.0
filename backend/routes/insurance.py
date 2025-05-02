@@ -34,6 +34,7 @@ def buy_policy():
     aadhaar_number = farmer.aadhaar_number
 
     data = request.json
+    print(data)
     policy_num = data.get("policy_num")
     coverage_amount = data.get("coverage_amount")
     premium_amount = data.get("premium_amount")
@@ -41,6 +42,9 @@ def buy_policy():
     end_date = data.get("end_date")
     insurer_id = data.get("insurer_id")
     policy_type = data.get("policy_type", "basic")
+    location = data.get("location")
+    crop_type = data.get("cropType")
+    landsize = data.get("landSize")
 
     if not all([policy_num, coverage_amount, premium_amount, start_date, end_date, insurer_id]):
         return jsonify({"error": "Missing one or more required fields"}), 400
@@ -50,7 +54,9 @@ def buy_policy():
         premium_amount = float(premium_amount)
         start_date = datetime.strptime(start_date, "%Y-%m-%d")
         end_date = datetime.strptime(end_date, "%Y-%m-%d")
-
+        landsize = float(landsize)
+        location = jsonify(location)
+        
         new_policy = InsPolicy(
             policy_num=policy_num,
             aadhaar_number=aadhaar_number,

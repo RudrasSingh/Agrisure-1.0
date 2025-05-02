@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Numeric, Date, TIMESTAMP, ForeignKey, Enum
 from database import Base
+from sqlalchemy.orm import relationship
 import enum
 
 # You can define Enums here or import from your enums module
@@ -41,6 +42,7 @@ class InsPolicy(Base):
     policy_type = Column(Enum(PolicyTypeEnum))
     created_at = Column(TIMESTAMP)
     insurer_id = Column(String, ForeignKey("AgriSure.insurer.insurer_id"), nullable=False)
-
+    # Define the relationship to Claims
+    claims = relationship("Claims", back_populates="policy")
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
