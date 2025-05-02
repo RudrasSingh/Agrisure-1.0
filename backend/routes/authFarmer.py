@@ -4,6 +4,8 @@ from models.farmer import Farmer
 from datetime import datetime
 from utils.auth import token_required, farmer_required
 from sqlalchemy.orm import Session
+from werkzeug.utils import secure_filename
+import os
 
 farmer_auth_bp = Blueprint("farmer_auth", __name__, url_prefix="/api/v1/farmer")
 
@@ -17,18 +19,24 @@ def get_db():
 
 @farmer_auth_bp.route("/signup", methods=["POST"])
 def signup():
-    data = request.json
-    email = data.get("email")
-    password = data.get("password")
-    
-    # Check for both spellings of Aadhaar/Aadhar
-    aadhaar_number = data.get("aadhaar_number")
-    
-    full_name = data.get("full_name")
-    phone = data.get("phone")
+     # Use request.form for text data, request.files for files
+    email = request.form.get("email")
+    password = request.form.get("password")
+    aadhaar_number = request.form.get("aadhaar_number")
+    full_name = request.form.get("full_name")
+    phone = request.form.get("phone")
 
-    if not all([email, password, aadhaar_number, full_name, phone]):
-        return jsonify({"error": "Email, password, Aadhaar number, and full name are required"}), 400
+    pdf_file = request.files.get("landDocument") 
+
+    if not all([email, password, aadhaar_number, full_name, phone, pdf_file]):
+        return jsonify({"error": "All fields including Aadhaar PDF are required"}), 400
+
+    if pdf_file and pdf_file.filename.endswith('.pdf'):
+        filename = secure_filename(pdf_file.filename)
+        filepath = os.path.join("./backend/uploads", filename)  # Create this folder if not exists
+        pdf_file.save(filepath)
+    else:
+        return jsonify({"error": "Invalid file format. Please upload a PDF"}), 400
 
     try:
         db = next(get_db())
