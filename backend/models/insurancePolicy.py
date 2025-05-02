@@ -24,13 +24,13 @@ class PolicyTypeEnum(enum.Enum):
     parametric = 'parametric'
 
 class InsPolicy(Base):
-    _tablename_ = "ins_policies"
-    _table_args_ = {"schema": "AgriSure"}
+    __tablename__ = "ins_policies"
+    __table_args__ = {"schema": "AgriSure"}
 
     policy_num = Column(String, primary_key=True)
     aadhaar_number = Column(
         String,
-        ForeignKey("AgriSure.farmer.aadhaar_number", ondelete="CASCADE"),
+        ForeignKey("farmer.aadhaar_number", ondelete="CASCADE"),
         nullable=False
     )
     coverage_amount = Column(Numeric, nullable=False)
@@ -40,6 +40,7 @@ class InsPolicy(Base):
     status = Column(Enum(PolicyStatusEnum), default=PolicyStatusEnum.active)
     policy_type = Column(Enum(PolicyTypeEnum))
     created_at = Column(TIMESTAMP)
+    insurer_id = Column(String, ForeignKey("insurer.insurer_id"), nullable=False)
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self._table_.columns}
+        return {c.name: getattr(self, c.name) for c in self.__tabl__.columns}

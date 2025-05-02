@@ -4,6 +4,7 @@ from models.farmer import Farmer
 from datetime import datetime
 from utils.auth import token_required, farmer_required
 from sqlalchemy.orm import Session
+
 farmer_auth_bp = Blueprint("farmer_auth", __name__, url_prefix="/api/v1/farmer")
 
 def get_db():

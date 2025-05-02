@@ -2,8 +2,8 @@ from sqlalchemy import Column, String, Text, Boolean, Numeric, TIMESTAMP, Foreig
 from database import Base
 
 class BlockchainIn(Base):
-    _tablename_ = "blockchain_in"
-    _table_args_ = {"schema": "AgriSure"}
+    __tablename__ = "blockchain_in"
+    __table_args__ = {"schema": "AgriSure"}
 
     aadhaar_number = Column(
         String,
@@ -21,8 +21,9 @@ class BlockchainIn(Base):
     claim_sts = Column(Text, nullable=False)
     policy_num = Column(
         String,
-        ForeignKey("AgriSure.ins_policies.policy_num", ondelete="CASCADE")
+        ForeignKey("ins_policies.policy_num", ondelete="CASCADE")
     )
+    insurer_id = Column(String, ForeignKey("insurer.insurer_id"), nullable=False)
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self._table_.columns}
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

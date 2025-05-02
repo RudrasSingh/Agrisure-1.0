@@ -1,16 +1,26 @@
-from flask import Flask
-from config import settings
-from backend.database import Base, engine
-from .models import user, claim #TODO: fix import statement
-from .routes import authFarmer
+from flask import Flask,jsonify
+from models import *  # Import all models to register them with SQLAlchemy
+from routes.authFarmer import farmer_auth_bp
+from flask_cors import CORS
 
-# Create all tables if not exist
-Base.metadata.create_all(bind=engine)
 
-app = Flask(__name__)
-app.config["DEBUG"] = settings.FLASK_DEBUG
+def create_app():
+    app = Flask(__name__)
+    # CORS(app,
+    #      supports_credentials=True,
+    #      origins=["*"])  # Adjust the origins as needed
 
-# Register your route blueprints
-app.register_blueprint(authFarmer)
+    @app.route("/health", methods=["GET"]) 
+    def health_check():
+        return jsonify({"status": "healthy"})
+
+    # Register all blueprints
+    app.register_blueprint(farmer_auth_bp)
+    # Add other blueprints here as needed
+
+    return app
+
+app = create_app()
+
 if __name__ == "__main__":
-    app.run(host=settings.FLASK_HOST, port=settings.FLASK_PORT)
+    app.run(host="0.0.0.0", port=8000, debug=True)

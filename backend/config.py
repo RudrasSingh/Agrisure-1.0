@@ -3,11 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class Settings:
-    # Flask
-    FLASK_DEBUG = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    FLASK_HOST = os.getenv("FLASK_HOST", "0.0.0.0")
-    FLASK_PORT = int(os.getenv("FLASK_PORT", 5000))
+class Settings:  
 
     # Supabase (Postgres + Auth)
     SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -28,18 +24,18 @@ class Settings:
     SH_CLIENT_SECRET = os.getenv("SH_CLIENT_SECRET")
     SH_BASE_URL = os.getenv("SH_BASE_URL", "https://services.sentinel-hub.com")
 
-    # Mailjet
-    MAILJET_API_KEY = os.getenv("MAILJET_API_KEY")
-    MAILJET_SECRET = os.getenv("MAILJET_SECRET")
+    # # Mailjet
+    # MAILJET_API_KEY = os.getenv("MAILJET_API_KEY")
+    # MAILJET_SECRET = os.getenv("MAILJET_SECRET")
 
     # SMS (e.g. Twilio trial)
-    SMS_ACCOUNT_SID = os.getenv("SMS_ACCOUNT_SID")
-    SMS_AUTH_TOKEN = os.getenv("SMS_AUTH_TOKEN")
-    SMS_FROM_NUMBER = os.getenv("SMS_FROM_NUMBER")
+    # SMS_ACCOUNT_SID = os.getenv("SMS_ACCOUNT_SID")
+    # SMS_AUTH_TOKEN = os.getenv("SMS_AUTH_TOKEN")
+    # SMS_FROM_NUMBER = os.getenv("SMS_FROM_NUMBER")
 
-    # Web3 / Blockchain
-    WEB3_PROVIDER_URI = os.getenv("WEB3_PROVIDER_URI")
-    CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS")
-    CONTRACT_ABI_PATH = os.getenv("CONTRACT_ABI_PATH")  # local path to ABI JSON
+    # # Web3 / Blockchain
+    # WEB3_PROVIDER_URI = os.getenv("WEB3_PROVIDER_URI")
+    # CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS")
+    # CONTRACT_ABI_PATH = os.getenv("CONTRACT_ABI_PATH")  # local path to ABI JSON
 
 settings = Settings()

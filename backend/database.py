@@ -1,22 +1,12 @@
 from sqlalchemy import create_engine
-from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from config import settings
+from supabase import create_client
 
-# Construct the full Postgres URL for SQLAlchemy
-DATABASE_URL = f"{settings.SUPABASE_URL.replace('https://', 'postgresql://')}?sslmode=require"
+DATABASE_URL = settings.SQLALCHEMY_DATABASE_URL
 
-# Create engine & session
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for models
 Base = declarative_base()
+supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
-# Dependency for routes
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

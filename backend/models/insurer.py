@@ -5,8 +5,8 @@ from database import Base
 
 # Insurer Table Model
 class Insurer(Base):
-    _tablename_ = "insurer"
-    _table_args_ = {"schema": "AgriSure"}
+    __tablename__ = "insurer"
+    __table_args__ = {"schema": "AgriSure"}
 
     # Columns for Insurer
     insurer_id = Column(String, primary_key=True, nullable=False)
@@ -19,4 +19,4 @@ class Insurer(Base):
     # Relationships (if any) and methods can be added here
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self._table_.columns}
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

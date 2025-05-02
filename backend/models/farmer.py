@@ -2,8 +2,8 @@ from sqlalchemy import Column, String, Text, Boolean, TIMESTAMP
 from database import Base
 
 class Farmer(Base):
-    _tablename_ = "farmer"
-    _table_args_ = {"schema": "AgriSure"}
+    __tablename__ = "farmer"
+    __table_args__ = {"schema": "AgriSure"}
 
     aadhaar_number = Column(String, primary_key=True, nullable=False)
     full_name = Column(String, nullable=False)
@@ -17,4 +17,4 @@ class Farmer(Base):
     created_at = Column(TIMESTAMP)
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self._table_.columns}
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

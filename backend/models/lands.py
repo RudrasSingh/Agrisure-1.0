@@ -2,12 +2,12 @@ from sqlalchemy import Column, String, Float, Text, Date, ForeignKey, JSON
 from database import Base
 
 class LandData(Base):
-    _tablename_ = "land_data"
-    _table_args_ = {"schema": "AgriSure"}
+    __tablename__ = "land_data"
+    __table_args__ = {"schema": "AgriSure"}
 
     aadhaar_number = Column(
         String,
-        ForeignKey("AgriSure.farmer.aadhaar_number", ondelete="CASCADE"),
+        ForeignKey("farmer.aadhaar_number", ondelete="CASCADE"),
         primary_key=True
     )
     coordinates = Column(JSON)
@@ -18,4 +18,4 @@ class LandData(Base):
     soil_type = Column(Text)
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self._table_.columns}
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
