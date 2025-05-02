@@ -16,217 +16,158 @@ def get_db():
 
 
 @farmer_auth_bp.route("/signup", methods=["POST"])
-def send_otp():
+def signup():
     data = request.json
+    email = data.get("email")
+    password = data.get("password")
+    
+    # Check for both spellings of Aadhaar/Aadhar
+    aadhaar_number = data.get("aadhaar_number")
+    
+    full_name = data.get("full_name")
     phone = data.get("phone")
-    aadhaar = data.get("aadhaar")  # Now requiring Aadhaar during signup
 
-    if not phone or not aadhaar:
-        return jsonify({"error": "Phone number and Aadhaar number are required"}), 400
+    if not all([email, password, aadhaar_number, full_name, phone]):
+        return jsonify({"error": "Email, password, Aadhaar number, and full name are required"}), 400
 
     try:
-        # Check if the Aadhaar is already registered
         db = next(get_db())
-        existing_farmer = db.query(Farmer).filter_by(aadhaar=aadhaar).first()
-        if existing_farmer:
-            return jsonify({"error": "This Aadhaar number is already registered"}), 400
 
-        # Send OTP to the phone number
-        supabase.auth.sign_in_with_otp({"phone": phone})
-        
-        # IMPORTANT: Don't include Aadhaar in the response
-        return jsonify({"message": "OTP sent to phone"}), 200
+        if db.query(Farmer).filter((Farmer.email == email) | (Farmer.aadhaar_number == aadhaar_number)).first():
+            return jsonify({"error": "Email or Aadhaar number already registered"}), 400
 
-    except Exception as e:
-        return jsonify({"error": "OTP request failed", "detail": str(e)}), 500
-
-
-@farmer_auth_bp.route("/verify-otp", methods=["POST"])
-def verify_otp():
-    data = request.json
-    phone = data.get("phone")
-    otp = data.get("otp")
-    aadhaar = data.get("aadhaar")
-    name = data.get("name", "")
-
-    if not all([phone, otp, aadhaar]):
-        return jsonify({"error": "Phone, OTP, and Aadhaar number are required"}), 400
-
-    try:
-        result = supabase.auth.verify_otp({
-            "phone": phone,
-            "token": otp,
-            "type": "sms"
+        # Supabase signup
+        supabase_response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
         })
 
-        user = result.user
-        session = result.session
-        
-        if not user or not session:
-            return jsonify({"error": "OTP verification failed"}), 400
-
-        db = next(get_db())
-
-        # Check if already exists
-        if db.query(Farmer).filter_by(aadhaar=aadhaar).first():
-            return jsonify({"error": "Farmer already registered with this Aadhaar"}), 400
+        if not supabase_response or not supabase_response.user:
+            return jsonify({"error": "Supabase signup failed"}), 500
 
         new_farmer = Farmer(
-            farmer_id=user.id,
-            phone=phone,
-            aadhaar=aadhaar,
-            name=name,
-            created_at=datetime.utcnow()
+            email=email,
+            aadhaar_number=aadhaar_number,
+            full_name=full_name,
+            created_at=datetime.now(),
+            phone=phone
         )
         db.add(new_farmer)
         db.commit()
 
-        res = make_response(jsonify({
-            "message": "Farmer account verified and saved",
-            "user_id": user.id,
-            "name": name,
-            "phone": phone
-        }))
-        
-        # Set access token in cookie
-        res.set_cookie(
-            key="access_token",
-            value=session.access_token,
-            httponly=True,
-            secure=False,  # Set to True in production with HTTPS
-            samesite="None",
-            max_age=3600
-        )
-        # Set access token in cookie for production
-        # res.set_cookie(
-        #     key="access_token",
-        #     value=session.access_token,
-        #     httponly=True,
-        #     secure=True,  # FIXME: Set to True in production with HTTPS
-        #     samesite="None",
-        #     max_age=3600
-        # )
-
-        return res, 201
+        return jsonify({
+            "message": "Farmer account created successfully",
+            "user": {
+                "email": email,
+                "role": "farmer"
+            }
+        }), 201
 
     except Exception as e:
-        return jsonify({"error": "Verification failed", "detail": str(e)}), 500
+        return jsonify({"error": "Signup failed", "detail": str(e)}), 500
 
 
 @farmer_auth_bp.route("/login", methods=["POST"])
-def login_request_otp():
-    """Request OTP for login"""
-    data = request.json
-    phone = data.get("phone")
-    
-    if not phone:
-        return jsonify({"error": "Phone number is required"}), 400
-        
-    try:
-        # Check if the user exists
-        db = next(get_db())
-        existing_farmer = db.query(Farmer).filter_by(phone=phone).first()
-        
-        if not existing_farmer:
-            return jsonify({"error": "No account found with this phone number"}), 404
-            
-        # Send OTP
-        supabase.auth.sign_in_with_otp({"phone": phone})
-        
-        # IMPORTANT: Don't include Aadhaar in the response
-        return jsonify({
-            "message": "OTP sent to phone",
-            "name": existing_farmer.name
-        }), 200
-        
-    except Exception as e:
-        return jsonify({"error": "Login OTP request failed", "detail": str(e)}), 500
+def login():
+    db = next(get_db())
 
+    token = request.cookies.get("access_token")
+    if token:
+        try:
+            user_info = supabase.auth.get_user(token)
+            email = user_info.user.email
+            farmer = db.query(Farmer).filter_by(email=email).first()
+            if farmer:
+                return jsonify({
+                    "message": "Already logged in",
+                    "user": {
+                        "email": email,
+                        "role": "farmer",
+                        "full_name": farmer.full_name
+                    }
+                }), 200
+        except Exception:
+            pass  # Invalid token
 
-@farmer_auth_bp.route("/login/verify", methods=["POST"])
-def login_verify_otp():
-    """Verify OTP for login"""
     data = request.json
-    phone = data.get("phone")
-    otp = data.get("otp")
-    
-    if not phone or not otp:
-        return jsonify({"error": "Phone number and OTP are required"}), 400
-        
+    email = data.get("email")
+    password = data.get("password")
+
+    if not all([email, password]):
+        return jsonify({"error": "Email and password required"}), 400
+
     try:
-        result = supabase.auth.verify_otp({
-            "phone": phone,
-            "token": otp,
-            "type": "sms"
+        response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
         })
-        
-        user = result.user
-        session = result.session
-        
-        if not user or not session:
-            return jsonify({"error": "OTP verification failed"}), 400
-            
-        # Get farmer details
-        db = next(get_db())
-        farmer = db.query(Farmer).filter_by(phone=phone).first()
-        
+
+        if not response.user or not response.session:
+            return jsonify({"error": "Invalid credentials"}), 401
+
+        farmer = db.query(Farmer).filter_by(email=email).first()
         if not farmer:
-            return jsonify({"error": "Farmer not found"}), 404
-            
+            return jsonify({"error": "Farmer not found in database"}), 404
+
         res = make_response(jsonify({
             "message": "Login successful",
-            "user_id": user.id,
-            "farmer_details": {
-                "name": farmer.name,
-                "phone": farmer.phone
-                # IMPORTANT: Aadhaar removed from response
+            "user": {
+                "email": email,
+                "role": "farmer",
+                "full_name": farmer.full_name
             }
         }))
-        
-        # Set access token in cookie
         res.set_cookie(
             key="access_token",
-            value=session.access_token,
+            value=response.session.access_token,
             httponly=True,
-            secure=False,  # Set to True in production with HTTPS
+            secure=False,  # True in prod
             samesite="None",
             max_age=3600
         )
-        
-        return res, 200
-        
+
+        return res
+
     except Exception as e:
-        return jsonify({"error": "Login verification failed", "detail": str(e)}), 500
+        return jsonify({"error": "Login failed", "detail": str(e)}), 500
 
 
 @farmer_auth_bp.route("/logout", methods=["POST"])
+@token_required
 def logout():
-    """Logout the farmer by clearing cookies"""
     response = make_response(jsonify({"message": "Logged out successfully"}))
-    response.set_cookie("access_token", "", expires=0)  # Clear the cookie
+    response.set_cookie("access_token", "", expires=0)
     return response
 
 
-@farmer_auth_bp.route("/me", methods=["GET"])
+@farmer_auth_bp.route("/profile", methods=["GET"])
 @token_required
 @farmer_required
 def get_current_farmer():
-    """Get the current logged-in farmer details"""
-    # Farmer is already authenticated and loaded by the middleware
-    farmer = request.farmer
-    
-    # Return all fields from the farmer model except Aadhaar
+    db = next(get_db())
+    email = request.user.get("email")
+
+    if not email:
+        return jsonify({"error": "Email not found in session"}), 400
+
+    farmer = db.query(Farmer).filter_by(email=email).first()
+    if not farmer:
+        return jsonify({"error": "Farmer not found"}), 404
+
     return jsonify({
-        "farmer": {
-            "aadhaar_number": "XXXX-XXXX-" + farmer.aadhaar_number[-4:] if farmer.aadhaar_number else None,
+        "message": "Profile fetched successfully",
+        "profile": {
+            "aadhaar_number": "XXXX-XXXX-" + farmer.aadhaar_number[-4:],
+            "phone" : farmer.phone,
             "full_name": farmer.full_name,
-            "phone": farmer.phone,
-            "address": farmer.Address,
+            "email": farmer.email,
+            "address": farmer.address,
             "upi_id": farmer.upi_id,
             "land_doc_url": farmer.land_doc_url,
             "kyc_verified": farmer.kyc_verified,
             "language_pref": farmer.language_pref,
             "wallet_address": farmer.wallet_address,
-            "created_at": farmer.created_at.isoformat() if farmer.created_at else None
+            "created_at": farmer.created_at.isoformat() if farmer.created_at else None,
+
         }
     }), 200

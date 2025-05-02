@@ -1,6 +1,7 @@
 from flask import Flask,jsonify
 from models import *  # Import all models to register them with SQLAlchemy
 from routes.authFarmer import farmer_auth_bp
+from routes.insurance import insurance_bp
 from flask_cors import CORS
 
 
@@ -16,6 +17,7 @@ def create_app():
 
     # Register all blueprints
     app.register_blueprint(farmer_auth_bp)
+    app.register_blueprint(insurance_bp)
     # Add other blueprints here as needed
 
     return app

@@ -30,7 +30,7 @@ class InsPolicy(Base):
     policy_num = Column(String, primary_key=True)
     aadhaar_number = Column(
         String,
-        ForeignKey("farmer.aadhaar_number", ondelete="CASCADE"),
+        ForeignKey("AgriSure.farmer.aadhaar_number", ondelete="CASCADE"),
         nullable=False
     )
     coverage_amount = Column(Numeric, nullable=False)
@@ -40,7 +40,7 @@ class InsPolicy(Base):
     status = Column(Enum(PolicyStatusEnum), default=PolicyStatusEnum.active)
     policy_type = Column(Enum(PolicyTypeEnum))
     created_at = Column(TIMESTAMP)
-    insurer_id = Column(String, ForeignKey("insurer.insurer_id"), nullable=False)
+    insurer_id = Column(String, ForeignKey("AgriSure.insurer.insurer_id"), nullable=False)
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__tabl__.columns}
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}

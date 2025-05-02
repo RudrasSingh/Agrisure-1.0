@@ -6,9 +6,10 @@ class Farmer(Base):
     __table_args__ = {"schema": "AgriSure"}
 
     aadhaar_number = Column(String, primary_key=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
     full_name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
-    Address = Column(Text)
+    address = Column(Text)
     upi_id = Column(String)
     land_doc_url = Column(String)
     kyc_verified = Column(Boolean, default=False)

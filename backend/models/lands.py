@@ -7,7 +7,7 @@ class LandData(Base):
 
     aadhaar_number = Column(
         String,
-        ForeignKey("farmer.aadhaar_number", ondelete="CASCADE"),
+        ForeignKey("AgriSure.farmer.aadhaar_number", ondelete="CASCADE"),
         primary_key=True
     )
     coordinates = Column(JSON)

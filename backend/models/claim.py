@@ -19,8 +19,8 @@ class Claims(Base):
 
     # Columns for Claims
     claim_id = Column(String, primary_key=True, nullable=False)
-    policy_num = Column(String, ForeignKey("ins_policies.policy_num", ondelete="CASCADE"), nullable=False)
-    aadhaar_number = Column(String, ForeignKey("farmer.aadhaar_number", ondelete="CASCADE"), nullable=False)
+    policy_num = Column(String, ForeignKey("AgriSure.ins_policies.policy_num", ondelete="CASCADE"), nullable=False)
+    aadhaar_number = Column(String, ForeignKey("AgriSure.farmer.aadhaar_number", ondelete="CASCADE"), nullable=False)
     claim_amt = Column(Numeric, nullable=False)
     claim_sts = Column("PolicyStatusEnum", Enum(PolicyStatusEnum), default=PolicyStatusEnum.pending)  # Reference to Enum
     claim_date = Column(TIMESTAMP, default="now()")  # When the claim was filed
@@ -30,7 +30,7 @@ class Claims(Base):
     reason_ = Column(Text, nullable=True)  # Reason for claim (optional)
     created_at = Column(TIMESTAMP, default="now()")  # When the record is created
     updated_at = Column(TIMESTAMP, nullable=True)  # When the record is updated (nullable)
-    insurer_id = Column(String, ForeignKey("insurer.insurer_id"), nullable=False)
+    insurer_id = Column(String, ForeignKey("AgriSure.insurer.insurer_id"), nullable=False)
     # Relationships
     policy = relationship("InsPolicies", back_populates="claims")  # Relating with ins_policies table
     farmer = relationship("Farmer", back_populates="claims")  # Relating with farmer table

@@ -10,7 +10,7 @@ class BlockchainIn(Base):
         ForeignKey("AgriSure.farmer.aadhaar_number", ondelete="CASCADE"),
         primary_key=True
     )
-    Address = Column(Text)
+    address = Column(Text)
     crop_name = Column(Text, nullable=False)
     sum_insured = Column(Text, nullable=False)
     premium_paid = Column(Numeric, nullable=False)
@@ -21,9 +21,9 @@ class BlockchainIn(Base):
     claim_sts = Column(Text, nullable=False)
     policy_num = Column(
         String,
-        ForeignKey("ins_policies.policy_num", ondelete="CASCADE")
+        ForeignKey("AgriSure.ins_policies.policy_num", ondelete="CASCADE")
     )
-    insurer_id = Column(String, ForeignKey("insurer.insurer_id"), nullable=False)
+    insurer_id = Column(String, ForeignKey("AgriSure.insurer.insurer_id"), nullable=False)
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
