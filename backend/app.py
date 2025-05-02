@@ -7,9 +7,9 @@ from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__)
-    # CORS(app,
-    #      supports_credentials=True,
-    #      origins=["*"])  # Adjust the origins as needed
+    CORS(app,
+         supports_credentials=True,
+         origins=["http://localhost:5173","*"])  # Adjust the origins as needed
 
     @app.route("/health", methods=["GET"]) 
     def health_check():
