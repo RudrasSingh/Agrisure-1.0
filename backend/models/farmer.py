@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Text, Boolean, TIMESTAMP
 from database import Base
+from sqlalchemy.orm import relationship
 
 class Farmer(Base):
     __tablename__ = "farmer"
@@ -16,6 +17,7 @@ class Farmer(Base):
     language_pref = Column(String)
     wallet_address = Column(String)
     created_at = Column(TIMESTAMP)
-
+    # Define relationship to Claims
+    claims = relationship("Claims", back_populates="farmer", lazy="dynamic")
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

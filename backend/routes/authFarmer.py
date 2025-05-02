@@ -19,7 +19,6 @@ def get_db():
 @farmer_auth_bp.route("/signup", methods=["POST"])
 def signup():
     data = request.json
-    print(data)
     email = data.get("email")
     password = data.get("password")
     
@@ -238,70 +237,70 @@ def update_profile():
         return jsonify({"error": "Profile update failed", "detail": str(e)}), 500
     
 
-# @farmer_auth_bp.route("/dashboard", methods=["GET"])
-# @token_required
-# @farmer_required
-# def get_dashboard_date():
-#     from models.insurancePolicy import InsPolicy  # Import the InsPolicy model
-#     from models.claim import Claims  # Import the Claims model
-#     db = next(get_db())
-#     email = request.user.get("email")
+@farmer_auth_bp.route("/dashboard", methods=["GET"])
+@token_required
+@farmer_required
+def get_dashboard_date():
+    from models import InsPolicy  # Import the InsPolicy model
+    from models import Claims  # Import the Claims model
+    db = next(get_db())
+    email = request.user.get("email")
 
-#     if not email:
-#         return jsonify({"error": "Email not found in session"}), 400
+    if not email:
+        return jsonify({"error": "Email not found in session"}), 400
 
-#     # Fetch farmer details
-#     farmer = db.query(Farmer).filter_by(email=email).first()
-#     if not farmer:
-#         return jsonify({"error": "Farmer not found"}), 404
+    # Fetch farmer details
+    farmer = db.query(Farmer).filter_by(email=email).first()
+    if not farmer:
+        return jsonify({"error": "Farmer not found"}), 404
 
-#     # Fetch active policies
-#     active_policies = db.query(InsPolicy).filter_by(aadhaar_number=farmer.aadhaar_number, status="active").all()
-#     active_policies_count = len(active_policies)
-#     total_premium_amount = sum(policy.premium_amount for policy in active_policies)
-#     total_amount_insured = sum(policy.coverage_amount for policy in active_policies)
+    # Fetch active policies
+    active_policies = db.query(InsPolicy).filter_by(aadhaar_number=farmer.aadhaar_number, status="active").all()
+    active_policies_count = len(active_policies)
+    total_premium_amount = sum(policy.premium_amount for policy in active_policies)
+    total_amount_insured = sum(policy.coverage_amount for policy in active_policies)
 
-#     # Fetch recent transactions (example: premium payments)
-#     recent_transactions = db.query(Claims).filter_by(aadhaar_number=farmer.aadhaar_number).order_by(Claims.claim_date.desc()).limit(5).all()
-#     transactions_data = [
-#         {
-#             "transactionId": claim.claim_id,
-#             "type": "Claim Settlement",
-#             "amount": claim.claim_amt,
-#             "date": claim.claim_date.isoformat() if claim.claim_date else "N/A",
-#             "status": claim.claim_sts.value if claim.claim_sts else "N/A"
-#         }
-#         for claim in recent_transactions
-#     ]
+    # Fetch recent transactions (example: premium payments)
+    recent_transactions = db.query(Claims).filter_by(aadhaar_number=farmer.aadhaar_number).order_by(Claims.claim_date.desc()).limit(5).all()
+    transactions_data = [
+        {
+            "transactionId": claim.claim_id,
+            "type": "Claim Settlement",
+            "amount": claim.claim_amt,
+            "date": claim.claim_date.isoformat() if claim.claim_date else "N/A",
+            "status": claim.claim_sts.value if claim.claim_sts else "N/A"
+        }
+        for claim in recent_transactions
+    ]
 
-#     # Example weather alerts (replace with dynamic data if available)
-#     weather_alerts = [
-#         {
-#             "type": "Heavy Rainfall",
-#             "date": "2025-05-15",
-#             "location": "Northern Region",
-#             "impact": "Moderate"
-#         },
-#         {
-#             "type": "Heatwave",
-#             "date": "2025-05-18",
-#             "location": "All Regions",
-#             "impact": "High"
-#         }
-#     ]
+    # Example weather alerts (replace with dynamic data if available)
+    weather_alerts = [
+        {
+            "type": "Heavy Rainfall",
+            "date": "2025-05-15",
+            "location": "Northern Region",
+            "impact": "Moderate"
+        },
+        {
+            "type": "Heatwave",
+            "date": "2025-05-18",
+            "location": "All Regions",
+            "impact": "High"
+        }
+    ]
 
-#     # Prepare dashboard data
-#     dashboard_data = {
-#         "farmer": {
-#             "name": farmer.full_name
-#         },
-#         "stats": {
-#             "activePolicies": active_policies_count,
-#             "totalPremiumAmount": total_premium_amount,
-#             "totalAmountInsured": total_amount_insured
-#         },
-#         "weatherAlerts": weather_alerts,
-#         "recentTransactions": transactions_data
-#     }
+    # Prepare dashboard data
+    dashboard_data = {
+        "farmer": {
+            "name": farmer.full_name
+        },
+        "stats": {
+            "activePolicies": active_policies_count,
+            "totalPremiumAmount": total_premium_amount,
+            "totalAmountInsured": total_amount_insured
+        },
+        "weatherAlerts": weather_alerts,
+        "recentTransactions": transactions_data
+    }
 
-#     return jsonify(dashboard_data), 200
+    return jsonify(dashboard_data), 200
