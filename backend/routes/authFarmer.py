@@ -34,6 +34,9 @@ def signup():
     if not all([email, password, aadhaar_number, full_name, phone]):
         return jsonify({"error": "Email, password, Aadhaar number, and full name are required"}), 400
 
+    if len(aadhaar_number) > 12 or len(aadhaar_number) < 12 :
+        return jsonify({"error": "Aadhaar number is invalid"}), 400
+
     try:
         db = next(get_db())
 
