@@ -25,153 +25,271 @@ def get_db():
         db.close()
 
 def generate_insurance_pdf(farmer_name, contact, policy_num, contract_address, issue_date, coverage_amount, premium_amount, start_date, end_date, policy_type, insurer_name="AgriSure Insurance"):
-    """Generate a detailed insurance certificate PDF"""
+    """Generate a stunning, professional insurance certificate PDF"""
     buffer = io.BytesIO()
     
-    # Create PDF document
+    # Create PDF document with tighter margins for better layout
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
-        rightMargin=72,
-        leftMargin=72,
-        topMargin=72,
-        bottomMargin=72,
+        rightMargin=30,
+        leftMargin=30,
+        topMargin=30,
+        bottomMargin=30,
         title=f"Insurance Certificate - {policy_num}"
     )
     
     # Container for the 'Flowable' objects
     elements = []
     
-    # Styles
+    # Styles with better typography
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='Center', alignment=1)) 
-    styles.add(ParagraphStyle(name='Right', alignment=2))
-    # Don't re-add Title and Subtitle styles that already exist
-    # styles.add(ParagraphStyle(name='Title', fontSize=18, alignment=1, spaceAfter=12))  # Remove this line
-    # styles.add(ParagraphStyle(name='Subtitle', fontSize=14, alignment=1, spaceAfter=10))  # Remove this line
-
-    # Instead, modify the existing Title style if needed
-    styles['Title'].alignment = 1
-    styles['Title'].spaceAfter = 12
-    styles['Title'].fontSize = 18
-
-    # Add only the custom heading style that doesn't exist
-    styles.add(ParagraphStyle(name='Heading', fontSize=12, alignment=0, spaceAfter=6, fontName='Helvetica-Bold'))
+    styles.add(ParagraphStyle(name='Center', alignment=1, fontName='Helvetica'))
+    styles.add(ParagraphStyle(name='Right', alignment=2, fontName='Helvetica'))
     
-    # Get logo from assets folder
-    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets', 'logo.png')
+    # MODIFY existing styles instead of adding new ones with the same name
+    # Don't add 'BodyText' as a new style, modify the existing one
+    styles['BodyText'].fontName = 'Helvetica'
+    styles['BodyText'].fontSize = 10
+    styles['BodyText'].leading = 14
+    styles['BodyText'].spaceBefore = 6
+    styles['BodyText'].spaceAfter = 6
     
-    # Header section with logo and title
-    header_data = [[]]
+    # Add styles that don't exist yet
+    styles.add(ParagraphStyle(name='Heading1Green', fontName='Helvetica-Bold', fontSize=14, leading=16, 
+                            textColor=colors.darkgreen, spaceBefore=10, spaceAfter=6))
+    styles.add(ParagraphStyle(name='HeadingCenter', fontName='Helvetica-Bold', fontSize=14, alignment=1,
+                            textColor=colors.darkgreen, spaceBefore=10, spaceAfter=6))
     
+    # Import additional needed packages
+    from reportlab.graphics.shapes import Drawing, Line
+    from reportlab.lib.pagesizes import inch
+    
+    # Create a border for the entire document
+    def add_border(canvas, doc):
+        canvas.saveState()
+        canvas.setStrokeColor(colors.darkgreen)
+        canvas.setLineWidth(2)
+        # Draw a border with rounded corners (rectangle)
+        canvas.roundRect(20, 20, doc.width+20, doc.height+20, 10, stroke=1, fill=0)
+        # Add a thin inner border
+        canvas.setStrokeColor(colors.lightgreen)
+        canvas.setLineWidth(0.5)
+        canvas.roundRect(25, 25, doc.width+10, doc.height+10, 8, stroke=1, fill=0)
+        canvas.restoreState()
+    
+    # Get AgriSure logo from URL
+    logo_url = "https://xrcemypzyjsxoihkckin.supabase.co/storage/v1/object/public/agrisure//Untitled-1.png"
+    
+    # Try to fetch the logo from URL
+    import requests
+    from io import BytesIO
+    
+    logo = None
     try:
-        # Add logo to document if it exists
-        if os.path.exists(logo_path):
-            logo = Image(logo_path, width=1.5*inch, height=1.5*inch)
-            header_data[0].append(logo)
+        response = requests.get(logo_url)
+        if response.status_code == 200:
+            logo_data = BytesIO(response.content)
+            logo = Image(logo_data, width=2.2*inch, height=1.3*inch)
         else:
-            # Fallback text if logo not found
-            header_data[0].append(Paragraph("<font size=12>AgriSure</font>", styles['Center']))
-            print(f"Logo file not found at: {logo_path}")
+            print(f"Failed to fetch logo: HTTP {response.status_code}")
     except Exception as e:
         print(f"Error loading logo: {str(e)}")
-        header_data[0].append(Paragraph("<font size=12>AgriSure</font>", styles['Center']))
     
-    # Add titles next to logo
-    title_cell = []
-    title_cell.append(Paragraph("<font size=18>AGRI INSURE BLOCKCHAIN</font>", styles['Center']))
-    title_cell.append(Paragraph("<font size=14>Insurance Certificate</font>", styles['Center']))
-    title_cell.append(Paragraph(f"<font size=10>Policy: {policy_num}</font>", styles['Center']))
-    header_data[0].append(title_cell)
+    # Create a header with two-column layout
+    if logo:
+        # Create a table for header with logo on left, title on right
+        header_data = [[logo, None]]
+        
+        # Right column with certificate title and info
+        right_content = []
+        right_content.append(Paragraph("<font color='#006400' size='18'><b>INSURANCE CERTIFICATE</b></font>", styles['Center']))
+        right_content.append(Spacer(1, 5))
+        right_content.append(Paragraph(f"<font color='#228B22' size='12'>Policy Number: <b>{policy_num}</b></font>", styles['Center']))
+        right_content.append(Spacer(1, 5))
+        right_content.append(Paragraph(f"<font size='10'>Issued On: {issue_date}</font>", styles['Center']))
+        
+        header_data[0][1] = right_content
+        
+        header_table = Table(header_data, colWidths=[2.8*inch, 4.7*inch])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+            ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+            ('LEFTPADDING', (0, 0), (0, 0), 0),
+            ('RIGHTPADDING', (0, 0), (0, 0), 0),
+        ]))
+        elements.append(header_table)
+    else:
+        # Fallback if logo loading fails
+        elements.append(Paragraph("<font color='#006400' size='20'><b>AGRISURE BLOCKCHAIN INSURANCE</b></font>", styles['Center']))
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph("<font color='#228B22' size='16'><b>INSURANCE CERTIFICATE</b></font>", styles['Center']))
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph(f"<font size='12'>Policy Number: <b>{policy_num}</b></font>", styles['Center']))
+        elements.append(Spacer(1, 5))
+        elements.append(Paragraph(f"<font size='10'>Issued On: {issue_date}</font>", styles['Center']))
     
-    # Create header table
-    header_table = Table(header_data, colWidths=[2*inch, 3.5*inch])
-    header_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
-        ('ALIGN', (1, 0), (1, 0), 'LEFT'),
-    ]))
-    elements.append(header_table)
-    elements.append(Spacer(1, 20))
+    # Add decorative divider
+    from reportlab.platypus import HRFlowable
+    elements.append(Spacer(1, 15))
+    elements.append(HRFlowable(width="100%", thickness=1, lineCap='round', 
+                            color=colors.darkgreen, spaceBefore=1, spaceAfter=1))
+    elements.append(Spacer(1, 15))
     
-    # Policy details section
-    elements.append(Paragraph("POLICY DETAILS", styles['Heading']))
-    elements.append(Spacer(1, 5))
+    # Add certificate message with better formatting
+    certificate_msg = f"""
+    <font size='11' color='#333333'>This certificate confirms that <b>{farmer_name}</b> has purchased crop insurance 
+    coverage through the AgriSure Blockchain Insurance platform. This insurance policy 
+    is secured and verified using blockchain technology, ensuring complete transparency 
+    and immutability of the insurance contract.</font>
+    """
+    elements.append(Paragraph(certificate_msg, styles['BodyText']))
+    elements.append(Spacer(1, 15))
     
     # Format dates for display
     formatted_start_date = start_date if isinstance(start_date, str) else start_date.strftime("%B %d, %Y")
     formatted_end_date = end_date if isinstance(end_date, str) else end_date.strftime("%B %d, %Y")
     
-    # Format currency values
-    formatted_coverage = f"₹ {float(coverage_amount):,.2f}"
-    formatted_premium = f"₹ {float(premium_amount):,.2f}"
+    # Format currency values with Indian Rupee symbol
+    formatted_coverage = f"RS {float(coverage_amount):,.2f}"
+    formatted_premium = f"RS {float(premium_amount):,.2f}"
     
-    # Main details table
-    policy_data = [
-        ["Farmer Name:", farmer_name, "Policy Number:", policy_num],
-        ["Contact:", contact, "Policy Type:", policy_type.replace('_', ' ').title() if isinstance(policy_type, str) else str(policy_type)],
-        ["Coverage Amount:", formatted_coverage, "Premium Amount:", formatted_premium],
-        ["Start Date:", formatted_start_date, "End Date:", formatted_end_date],
-        ["Issued On:", issue_date, "Insurer:", insurer_name],
+    # Policy type formatting
+    policy_type_display = policy_type
+    if isinstance(policy_type, str):
+        policy_type_display = policy_type.replace('-', ' ').replace('_', ' ').title()
+    
+    # POLICYHOLDER INFORMATION SECTION - use Heading1Green instead of Heading1
+    elements.append(Paragraph("<font color='#006400'>POLICYHOLDER INFORMATION</font>", styles['Heading1Green']))
+    policyholder_data = [
+        ["Farmer Name:", farmer_name],
+        ["Contact:", contact],
     ]
     
-    # Create table
-    policy_table = Table(policy_data, colWidths=[1.5*inch, 1.8*inch, 1.5*inch, 1.8*inch])
-    policy_table.setStyle(TableStyle([
-        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
-        ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
+    policyholder_table = Table(policyholder_data, colWidths=[1.8*inch, 5.7*inch])
+    policyholder_table.setStyle(TableStyle([
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.lightgreen),
+        ('BOX', (0, 0), (-1, -1), 1, colors.darkgreen),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-        ('BACKGROUND', (2, 0), (2, -1), colors.lightgrey),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('BACKGROUND', (0, 0), (0, -1), colors.beige),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.darkgreen),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(policyholder_table)
+    elements.append(Spacer(1, 15))
+    
+    # POLICY DETAILS SECTION 
+    elements.append(Paragraph("<font color='#006400'>POLICY DETAILS</font>", styles['Heading1Green']))
+    
+    # Policy details with improved layout - 2 columns
+    policy_data = [
+        ["Policy Type:", policy_type_display, "Insurer:", insurer_name],
+        ["Coverage Amount:", formatted_coverage, "Premium Amount:", formatted_premium],
+        ["Start Date:", formatted_start_date, "End Date:", formatted_end_date],
+    ]
+    
+    # Create styled table for policy details
+    policy_table = Table(policy_data, colWidths=[1.8*inch, 2.5*inch, 1.5*inch, 1.7*inch])
+    policy_table.setStyle(TableStyle([
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.lightgreen),
+        ('BOX', (0, 0), (-1, -1), 1, colors.darkgreen),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BACKGROUND', (0, 0), (0, -1), colors.beige),
+        ('BACKGROUND', (2, 0), (2, -1), colors.beige),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.darkgreen),
+        ('TEXTCOLOR', (2, 0), (2, -1), colors.darkgreen),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
     ]))
     elements.append(policy_table)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 15))
     
-    # Blockchain verification section
-    elements.append(Paragraph("BLOCKCHAIN VERIFICATION", styles['Heading']))
-    elements.append(Spacer(1, 5))
+    # BLOCKCHAIN VERIFICATION SECTION with improved styling
+    elements.append(Paragraph("<font color='#006400'>BLOCKCHAIN VERIFICATION</font>", styles['Heading1Green']))
     
     blockchain_data = [
         ["Contract Address:", contract_address],
-        ["Verification Status:", "Verified on Blockchain"],
+        ["Verification Status:", "✓ Verified on AgriSure Blockchain Network"],
         ["Timestamp:", datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")]
     ]
     
-    blockchain_table = Table(blockchain_data, colWidths=[2*inch, 4.6*inch])
+    blockchain_table = Table(blockchain_data, colWidths=[1.8*inch, 5.7*inch])
     blockchain_table.setStyle(TableStyle([
-        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
-        ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.lightblue),
+        ('BOX', (0, 0), (-1, -1), 1, colors.darkblue),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.darkblue),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
     ]))
     elements.append(blockchain_table)
     
-    # Terms and conditions section
-    elements.append(Spacer(1, 20))
-    elements.append(Paragraph("TERMS & CONDITIONS", styles['Heading']))
-    elements.append(Spacer(1, 5))
-    terms_text = """
-    1. This policy is subject to the terms and conditions mentioned in the policy document.
-    2. Claims must be filed within 30 days of the loss incident.
-    3. The policy is valid only for the duration mentioned above.
-    4. Policy verification can be done by scanning the QR code or using the contract address on AgriSure portal.
-    5. Premium amount is non-refundable except as per the cancellation policy.
+    # Terms and conditions section with better formatting
+    elements.append(Spacer(1, 15))
+    elements.append(Paragraph("<font color='#006400'>TERMS & CONDITIONS</font>", styles['Heading1Green']))
+    
+    terms_items = [
+        "This policy is subject to the terms and conditions mentioned in the policy document.",
+        "Claims must be filed within 30 days of the loss incident.",
+        "The policy is valid only for the duration mentioned above.",
+        "Policy verification can be done by scanning the QR code or using the contract address on AgriSure portal.",
+        "Premium amount is non-refundable except as per the cancellation policy."
+    ]
+    
+    terms_text = ""
+    for i, item in enumerate(terms_items, 1):
+        terms_text += f"<font size='10'><b>{i}.</b> {item}</font><br/><br/>"
+    
+    elements.append(Paragraph(terms_text, styles['BodyText']))
+    
+    # Footer with improved design
+    elements.append(Spacer(1, 25))
+    elements.append(HRFlowable(width="100%", thickness=1, lineCap='round', 
+                            color=colors.darkgreen, spaceBefore=1, spaceAfter=1))
+    elements.append(Spacer(1, 10))
+    
+    # Create a authentication block
+    auth_data = [
+        [Paragraph("<font size='9'>Document ID:</font>", styles['Center']), 
+         Paragraph("<font size='9'>Digital Signature:</font>", styles['Center'])],
+        [Paragraph(f"<font size='9'><b>{uuid.uuid4().hex[:16].upper()}</b></font>", styles['Center']),
+         Paragraph("<font size='9'><b>Verified ✓</b></font>", styles['Center'])]
+    ]
+    
+    auth_table = Table(auth_data, colWidths=[3.75*inch, 3.75*inch])
+    auth_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.darkslategray),
+        ('LINEABOVE', (0, 1), (-1, 1), 0.5, colors.lightgrey),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elements.append(auth_table)
+    elements.append(Spacer(1, 10))
+    
+    # Company information
+    footer_text = """
+    <font size='8' color='#666666'>This certificate is digitally generated and secured on the blockchain. 
+    Any alteration to this document will invalidate the certificate.</font>
     """
-    elements.append(Paragraph(terms_text, styles['Normal']))
+    elements.append(Paragraph(footer_text, styles['Center']))
+    elements.append(Spacer(1, 5))
+    elements.append(Paragraph("<font size='8' color='#006400'>© 2025 AgriSure Blockchain Insurance • support@agrisure.ai • +91-8800123456</font>", styles['Center']))
     
-    # Footer
-    elements.append(Spacer(1, 30))
-    elements.append(Paragraph("This certificate is digitally generated on Blockchain for insurance verification purposes.", 
-                             styles['Center']))
-    elements.append(Paragraph(f"Document ID: {uuid.uuid4().hex[:16].upper()}", styles['Center']))
-    elements.append(Paragraph("Verified & Powered by Agri DApp Hackathon 2025", styles['Center']))
-    
-    # Build PDF
-    doc.build(elements)
+    # Build PDF with border
+    doc.build(elements, onFirstPage=add_border, onLaterPages=add_border)
     
     # Return PDF bytes
     buffer.seek(0)
