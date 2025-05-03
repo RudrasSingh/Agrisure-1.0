@@ -44,10 +44,18 @@ def generate_insurance_pdf(farmer_name, contact, policy_num, contract_address, i
     
     # Styles
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='Center', alignment=1))
+    styles.add(ParagraphStyle(name='Center', alignment=1)) 
     styles.add(ParagraphStyle(name='Right', alignment=2))
-    styles.add(ParagraphStyle(name='Title', fontSize=18, alignment=1, spaceAfter=12))
-    styles.add(ParagraphStyle(name='Subtitle', fontSize=14, alignment=1, spaceAfter=10))
+    # Don't re-add Title and Subtitle styles that already exist
+    # styles.add(ParagraphStyle(name='Title', fontSize=18, alignment=1, spaceAfter=12))  # Remove this line
+    # styles.add(ParagraphStyle(name='Subtitle', fontSize=14, alignment=1, spaceAfter=10))  # Remove this line
+
+    # Instead, modify the existing Title style if needed
+    styles['Title'].alignment = 1
+    styles['Title'].spaceAfter = 12
+    styles['Title'].fontSize = 18
+
+    # Add only the custom heading style that doesn't exist
     styles.add(ParagraphStyle(name='Heading', fontSize=12, alignment=0, spaceAfter=6, fontName='Helvetica-Bold'))
     
     # Get logo from assets folder
