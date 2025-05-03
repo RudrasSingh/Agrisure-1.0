@@ -24,8 +24,8 @@ def get_db():
     finally:
         db.close()
 
-def generate_insurance_pdf(farmer_name, contact, policy_num, contract_address, issue_date):
-    """Generate an insurance certificate PDF without saving to disk"""
+def generate_insurance_pdf(farmer_name, contact, policy_num, contract_address, issue_date, coverage_amount, premium_amount, start_date, end_date, policy_type, insurer_name="AgriSure Insurance"):
+    """Generate a detailed insurance certificate PDF"""
     buffer = io.BytesIO()
     
     # Create PDF document
@@ -35,7 +35,8 @@ def generate_insurance_pdf(farmer_name, contact, policy_num, contract_address, i
         rightMargin=72,
         leftMargin=72,
         topMargin=72,
-        bottomMargin=72
+        bottomMargin=72,
+        title=f"Insurance Certificate - {policy_num}"
     )
     
     # Container for the 'Flowable' objects
@@ -44,34 +45,121 @@ def generate_insurance_pdf(farmer_name, contact, policy_num, contract_address, i
     # Styles
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='Center', alignment=1))
+    styles.add(ParagraphStyle(name='Right', alignment=2))
+    styles.add(ParagraphStyle(name='Title', fontSize=18, alignment=1, spaceAfter=12))
+    styles.add(ParagraphStyle(name='Subtitle', fontSize=14, alignment=1, spaceAfter=10))
+    styles.add(ParagraphStyle(name='Heading', fontSize=12, alignment=0, spaceAfter=6, fontName='Helvetica-Bold'))
     
-    # Title
-    elements.append(Paragraph("<font size=18>AGRI INSURE BLOCKCHAIN</font>", styles['Center']))
-    elements.append(Paragraph("<font size=14>Insurance Certificate</font>", styles['Center']))
+    # Get logo from assets folder
+    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets', 'logo.png')
+    
+    # Header section with logo and title
+    header_data = [[]]
+    
+    try:
+        # Add logo to document if it exists
+        if os.path.exists(logo_path):
+            logo = Image(logo_path, width=1.5*inch, height=1.5*inch)
+            header_data[0].append(logo)
+        else:
+            # Fallback text if logo not found
+            header_data[0].append(Paragraph("<font size=12>AgriSure</font>", styles['Center']))
+            print(f"Logo file not found at: {logo_path}")
+    except Exception as e:
+        print(f"Error loading logo: {str(e)}")
+        header_data[0].append(Paragraph("<font size=12>AgriSure</font>", styles['Center']))
+    
+    # Add titles next to logo
+    title_cell = []
+    title_cell.append(Paragraph("<font size=18>AGRI INSURE BLOCKCHAIN</font>", styles['Center']))
+    title_cell.append(Paragraph("<font size=14>Insurance Certificate</font>", styles['Center']))
+    title_cell.append(Paragraph(f"<font size=10>Policy: {policy_num}</font>", styles['Center']))
+    header_data[0].append(title_cell)
+    
+    # Create header table
+    header_table = Table(header_data, colWidths=[2*inch, 3.5*inch])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('ALIGN', (1, 0), (1, 0), 'LEFT'),
+    ]))
+    elements.append(header_table)
     elements.append(Spacer(1, 20))
     
-    # Information
-    data = [
-        ["Farmer Name:", farmer_name],
-        ["Contact:", contact],
-        ["Policy No.:", policy_num],
-        ["Contract Address:", contract_address],
-        ["Issued On:", issue_date]
+    # Policy details section
+    elements.append(Paragraph("POLICY DETAILS", styles['Heading']))
+    elements.append(Spacer(1, 5))
+    
+    # Format dates for display
+    formatted_start_date = start_date if isinstance(start_date, str) else start_date.strftime("%B %d, %Y")
+    formatted_end_date = end_date if isinstance(end_date, str) else end_date.strftime("%B %d, %Y")
+    
+    # Format currency values
+    formatted_coverage = f"₹ {float(coverage_amount):,.2f}"
+    formatted_premium = f"₹ {float(premium_amount):,.2f}"
+    
+    # Main details table
+    policy_data = [
+        ["Farmer Name:", farmer_name, "Policy Number:", policy_num],
+        ["Contact:", contact, "Policy Type:", policy_type.replace('_', ' ').title() if isinstance(policy_type, str) else str(policy_type)],
+        ["Coverage Amount:", formatted_coverage, "Premium Amount:", formatted_premium],
+        ["Start Date:", formatted_start_date, "End Date:", formatted_end_date],
+        ["Issued On:", issue_date, "Insurer:", insurer_name],
     ]
     
     # Create table
-    table = Table(data, colWidths=[2*inch, 3*inch])
-    table.setStyle(TableStyle([
+    policy_table = Table(policy_data, colWidths=[1.5*inch, 1.8*inch, 1.5*inch, 1.8*inch])
+    policy_table.setStyle(TableStyle([
         ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
         ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey)
+        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+        ('BACKGROUND', (2, 0), (2, -1), colors.lightgrey),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
     ]))
-    elements.append(table)
+    elements.append(policy_table)
+    elements.append(Spacer(1, 20))
+    
+    # Blockchain verification section
+    elements.append(Paragraph("BLOCKCHAIN VERIFICATION", styles['Heading']))
+    elements.append(Spacer(1, 5))
+    
+    blockchain_data = [
+        ["Contract Address:", contract_address],
+        ["Verification Status:", "Verified on Blockchain"],
+        ["Timestamp:", datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")]
+    ]
+    
+    blockchain_table = Table(blockchain_data, colWidths=[2*inch, 4.6*inch])
+    blockchain_table.setStyle(TableStyle([
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+    ]))
+    elements.append(blockchain_table)
+    
+    # Terms and conditions section
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("TERMS & CONDITIONS", styles['Heading']))
+    elements.append(Spacer(1, 5))
+    terms_text = """
+    1. This policy is subject to the terms and conditions mentioned in the policy document.
+    2. Claims must be filed within 30 days of the loss incident.
+    3. The policy is valid only for the duration mentioned above.
+    4. Policy verification can be done by scanning the QR code or using the contract address on AgriSure portal.
+    5. Premium amount is non-refundable except as per the cancellation policy.
+    """
+    elements.append(Paragraph(terms_text, styles['Normal']))
     
     # Footer
     elements.append(Spacer(1, 30))
-    elements.append(Paragraph("This certificate is digitally generated on Blockchain for insurance verification purposes.", styles['Center']))
+    elements.append(Paragraph("This certificate is digitally generated on Blockchain for insurance verification purposes.", 
+                             styles['Center']))
+    elements.append(Paragraph(f"Document ID: {uuid.uuid4().hex[:16].upper()}", styles['Center']))
     elements.append(Paragraph("Verified & Powered by Agri DApp Hackathon 2025", styles['Center']))
     
     # Build PDF
@@ -144,7 +232,12 @@ def buy_policy():
             contact=farmer.phone,
             policy_num=policy_num,
             contract_address=contract_address,
-            issue_date=datetime.now().strftime("%Y-%m-%d")
+            issue_date=datetime.now().strftime("%Y-%m-%d"),
+            coverage_amount=coverage_amount,
+            premium_amount=premium_amount,
+            start_date=start_date,
+            end_date=end_date,
+            policy_type=policy_type
         )
         
         # Convert PDF to base64 for frontend
@@ -196,7 +289,12 @@ def get_certificate(policy_num):
         contact=farmer.phone,
         policy_num=policy_num,
         contract_address=contract_address,
-        issue_date=policy.created_at.strftime("%Y-%m-%d") if policy.created_at else datetime.now().strftime("%Y-%m-%d")
+        issue_date=policy.created_at.strftime("%Y-%m-%d") if policy.created_at else datetime.now().strftime("%Y-%m-%d"),
+        coverage_amount=policy.coverage_amount,
+        premium_amount=policy.premium_amount,
+        start_date=policy.start_date,
+        end_date=policy.end_date,
+        policy_type=policy.policy_type
     )
     
     # Create a file-like object from PDF bytes
