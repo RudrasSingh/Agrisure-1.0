@@ -24,9 +24,9 @@ class Settings:
     SH_CLIENT_SECRET = os.getenv("SH_CLIENT_SECRET")
     SH_BASE_URL = os.getenv("SH_BASE_URL", "https://services.sentinel-hub.com")
 
-    # # Mailjet
-    # MAILJET_API_KEY = os.getenv("MAILJET_API_KEY")
-    # MAILJET_SECRET = os.getenv("MAILJET_SECRET")
+    # Mailjet
+    MAILJET_API_KEY = os.getenv("MAILJET_API_KEY")
+    MAILJET_SECRET = os.getenv("MAILJET_SECRET")
 
     # SMS (e.g. Twilio trial)
     # SMS_ACCOUNT_SID = os.getenv("SMS_ACCOUNT_SID")

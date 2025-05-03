@@ -128,7 +128,7 @@ def login():
             key="access_token",
             value=response.session.access_token,
             httponly=True,
-            secure=True,  # True in prod
+            secure=False,  # True in prod
             samesite="None",
             max_age=3600
         )
